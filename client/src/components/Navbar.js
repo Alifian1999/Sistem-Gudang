@@ -31,12 +31,7 @@ export default function Navbars(){
                         <COffcanvasBody>
                             <CNavbarNav style={{textAlign:'start'}}>
                                 <CNavItem>
-                                    <CNavLink href="/about" active>
-                                        Tentang
-                                    </CNavLink>
-                                    </CNavItem>
-                                    <CNavItem>
-                                        <CNavLink href="/">Gudang</CNavLink>
+                                    <CNavLink href="/">Gudang</CNavLink>
                                 </CNavItem>
                             </CNavbarNav>
                             <Search/>
