@@ -30,7 +30,7 @@ module.exports = {
         onDelete: "CASCADE"
       },
       price: {
-        type: Sequelize.DOUBLE
+        type: Sequelize.INTEGER
       },
       total_produk: {
         type: Sequelize.INTEGER
@@ -39,6 +39,9 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       rak: {
+        type: Sequelize.STRING
+      },
+      poto_produk: {
         type: Sequelize.STRING
       },
       createdAt: {

@@ -1,4 +1,4 @@
-const {produk,kode_produk,kode_satuan} = require('../models')
+const {produk,kode_produk,kode_satuan,dtl_barang,customer,return_barang,repair_barang,tmpt_barang} = require('../models')
 const {query,QueryTypes} = require('sequelize')
 const rawQuery = require('../models/rawQuery/raw_query')
 const controller = {}
@@ -28,7 +28,7 @@ controller.paginationProduk = async(req,res,next) => {
         let [count] = await db.query(queryCountProduk)
 
 
-        //console.log(count[0].count)
+        console.log(count[0].count)
         page_count = Math.ceil( count[0].count / 10)
         let desc = `${req.query.page} dari ${page_count}`
 
@@ -130,6 +130,304 @@ controller.updateProduk = async(req,res,next) => {
         })
     } catch (err) {
         next(err)
+    }
+}
+
+controller.createBarangMasukKeluar = async(req,res,next) => {
+    try {
+        const barang = req.body
+        // const filename = req.file.filename
+        // console.log(filename)
+        // let isExist = 1
+
+        let [isExist] = await db.query(`
+                select ( case 
+                        when count(*) > 0 then true
+                        else false
+                        end
+                        ) as isExist
+                from produks 
+                where nama_produk like '%${req.body.nama_produk}%'`)
+        
+                console.log(isExist[0].isExist)
+
+        if(isExist[0].isExist == 0 && barang.masuk == 0) {
+            return next(new AppErrors('Nama barang Tidak ada di Database', 404))
+        }
+
+        if(barang.masuk == 0){
+            const [tot_produk] = await db.query(`select total_produk from produks where nama_produk like '%${barang.nama_produk}%'`)
+            console.log(tot_produk[0].total_produk)
+            let sum = tot_produk[0].total_produk - barang.jumlah
+            console.log(sum)
+            await produk.update({
+                total_produk: sum
+            },{
+                where: {
+                    nama_produk: barang.nama_produk
+                }
+            })
+
+
+            let imageSrc = ""
+            // console.log(req.file.filename)
+            if(req.file){
+                console.log("wow");
+                imageSrc = 'http://localhost:3001/images/'+req.file.filename
+            }
+            
+                await dtl_barang.create({
+                    nama_barang: barang.nama_produk,
+                    jumlah: barang.jumlah,
+                    barang_masuk: false,
+                    barang_keluar: true,
+                    images: imageSrc
+                })
+            
+        } else {
+            if(isExist[0].isExist == 1) {
+                const [tot_produk] = await db.query(`select total_produk from produks where nama_produk like '%${barang.nama_produk}%'`)
+                let sum = parseInt(tot_produk[0].total_produk) + parseInt(barang.jumlah)
+                console.log(sum)
+                await produk.update({
+                    total_produk: sum
+                },{
+                    where: {
+                        nama_produk: barang.nama_produk
+                    }
+                })
+
+                let imageSrc = ""
+                console.log(req.file)
+                if(req.file){
+                    imageSrc = 'http://localhost:3001/images/'+req.file.filename
+                }
+            
+                await dtl_barang.create({
+                    nama_barang: barang.nama_produk,
+                    jumlah: barang.jumlah,
+                    barang_masuk: true,
+                    barang_keluar: false,
+                    images: imageSrc
+                })
+                
+            } else {
+                let imageSrc = ""
+                if(req.file.filename){
+                    imageSrc = 'http://localhost:3001/images/'+req.file.filename
+                }
+            
+                await dtl_barang.create({
+                    nama_barang: barang.nama_produk,
+                    jumlah: barang.jumlah,
+                    barang_masuk: true,
+                    barang_keluar: false,
+                    images: imageSrc
+                })
+                
+            }
+        }
+
+        res.status(201).json({
+            status:"success",
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+controller.getBarangMasukKeluar = async(req,res,next) => {
+    try {
+        console.log("hai")
+        const result = await dtl_barang.findAll()
+
+
+        res.status(200).json({
+            status:"success",
+            data: result
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+controller.getCustomer = async(req,res,next) => {
+    try {
+        const [result] = await db.query(`
+            select a.*,b.nama_produk from customers a
+            inner join produks b
+            on a.id_produks = b.id;
+        `)
+
+        res.status(200).json({
+            status:"success",
+            data:result
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+controller.createCustomer = async(req,res,next) => {
+    try {
+        
+        const {nama_customer,jumlah,id_produks} = req.body
+
+        const [tot_produk] = await db.query(`select total_produk from produks where id = ${id_produks}`)
+
+        const sum = parseInt(tot_produk[0].total_produk) - parseInt(jumlah)
+
+        console.log(tot_produk)
+        console.log(sum)
+
+        await produk.update({
+            total_produk: sum
+        },{
+            where: {
+                id: id_produks
+            }
+        })
+
+        const result = await customer.create({
+                nama_customer,
+                jumlah,
+                id_produks
+            }
+        )
+
+        res.status(201).json({
+            status:"success",
+            data: result
+        })
+
+    } catch (error) {
+        next(error)
+    }
+}
+
+controller.createReturnBarang = async(req,res,next) => {
+    try {
+        const {jumlah,alasan,id_produks} = req.body
+
+        const [tot_produk] = await db.query(`select total_produk from produks where id = ${id_produks}`)
+
+        const sum = parseInt(tot_produk[0].total_produk) + parseInt(jumlah)
+
+        await produk.update({
+            total_produk: sum
+        },{
+            where: {
+                id: id_produks
+            }
+        })
+
+        const result = await return_barang.create({
+                alasan,
+                jumlah,
+                id_produks
+            }
+        )
+
+        res.status(200).json({
+            status:"success",
+            data: result
+        })
+
+    } catch (error) {
+        next(error)
+    }
+}
+
+controller.getReturnBarang = async(req,res,next) => {
+    try {
+        const [result] = await db.query(`
+            select a.*,b.nama_produk from return_barangs a
+            inner join produks b
+            on a.id_produks = b.id;
+        `)
+
+        res.status(200).json({
+            status:"success",
+            data:result
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+controller.createRepaiBarang = async(req,res,next) => {
+    try {
+        const {jumlah,alasan,id_produks} = req.body
+
+        const result = await repair_barang.create({
+                alasan,
+                jumlah,
+                id_produks
+            }
+        )
+
+        res.status(200).json({
+            status:"success",
+            data: result
+        })
+
+    } catch (error) {
+        next(error)
+    }
+}
+
+controller.getRepairBarang = async(req,res,next) => {
+    try {
+        const [result] = await db.query(`
+            select a.*,b.nama_produk from repair_barangs a
+            inner join produks b
+            on a.id_produks = b.id;
+        `)
+
+        res.status(200).json({
+            status:"success",
+            data:result
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+controller.createLokasiBarang = async(req,res,next) => {
+    try {
+        
+        const {lokasi,id_produks} = req.body
+
+        const result = await tmpt_barang.create({
+            lokasi,
+            id_produks
+        })
+
+        res.status(200).json({
+            status:"success",
+            data: result
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+controller.getLokasiBarang = async(req,res,next) => {
+    try {
+        const [result] = await db.query(`
+            select a.*,b.nama_produk,b.poto_produk from tmpt_barangs a
+            inner join produks b
+            on a.id_produks = b.id;
+        `)
+
+        res.status(200).json({
+            status:"success",
+            data:result
+        })
+
+        
+    } catch (error) {
+        next(error)
     }
 }
 

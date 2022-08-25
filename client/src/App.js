@@ -8,8 +8,9 @@ import {
   Routes,
   Route,
 } from "react-router-dom";
-import PageAction from './pages/PageAction';
+// import PageAction from './pages/PageAction';
 import { About } from './pages/About';
+import React from 'react';
 
 
 function App() {
@@ -20,7 +21,7 @@ function App() {
           <Route path='/page/sign-in' element={<SignIn/>}/>
           <Route path='/' element={<MainPage />}/>
           <Route path='/page/sign-up' element={<SignUp/>}/>
-          <Route path='/page-action' element={<PageAction/>}/>
+          {/* <Route path='/page-action' element={<PageAction/>}/> */}
           <Route path='/page/about' element={<About/>} />
         </Routes>
       </Router>

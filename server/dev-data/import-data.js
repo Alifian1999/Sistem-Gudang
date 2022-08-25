@@ -8,10 +8,10 @@ const kd_satuan = JSON.parse(fs.readFileSync(`${__dirname}/kd_satuan.json`, 'utf
 const ImportData = async()=>{
     try {
         //console.log(produks)
-        //await kode_produk.bulkCreate(kd_produk)
-        //await kode_satuan.bulkCreate(kd_satuan)
-        await produk.bulkCreate(produks)
-        console.log("SUKSES")
+        await kode_produk.bulkCreate(kd_produk)
+        await kode_satuan.bulkCreate(kd_satuan)
+        //await produk.bulkCreate(produks)
+        console.log("SUKSES MIGRATE")
     } catch (err) {
         console.log(err)
     }
@@ -21,4 +21,7 @@ const ImportData = async()=>{
 console.log(process.argv)
 if(process.argv[2] === '--import'){
     ImportData()
+}
+if(process.argv[2] === '---ok'){
+    console.log("nihao")
 }
